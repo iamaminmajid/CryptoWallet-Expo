@@ -93,7 +93,7 @@ function WalletItem(props){
           <Text style={styles.balance}>${coinData} {hourly > 0 ? (<Text style={styles.up}>+{hourly}%</Text>) : (<Text style={styles.down}>{hourly}%</Text>) } </Text>
       </View> 
       <View style={styles.column20}>
-          <Text style={styles.balance2}>{props.asset.balance.toFixed(3)}</Text>
+          <Text style={styles.balance2}>{props.asset.balance.toFixed(4)}</Text>
           {/* <Text style={styles.asset}>{asset.type}</Text> */}
       </View>
       </>

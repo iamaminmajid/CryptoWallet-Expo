@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "CW2",
-    "slug": "CW2",
+    "name": "w0llet",
+    "slug": "w0llet",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -17,7 +17,8 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.muamitech.w0llet"
     },
     "android": {
       "adaptiveIcon": {

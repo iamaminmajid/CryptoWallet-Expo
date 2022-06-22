@@ -22,16 +22,18 @@ const generateMnemonics = () => {
 const loadWalletFromMnemonics = async (mnemonics: string[]) => {
   if (!(mnemonics instanceof Array)) throw new Error('invalid mnemonic');
   // const provider = ethers.providers.
-  const provider = ethers.getDefaultProvider(getNetwork(), { etherscan: '5MTJT2IR25UKZ9PHKSUSZQFQ7ZG34DBT2S', infura: '478c82d1a63f42c99b79813cd0578fac', quorum: 0.1})
+  const provider = ethers.getDefaultProvider(getNetwork(), { etherscan: '5MTJT2IR25UKZ9PHKSUSZQFQ7ZG34DBT2S', infura: '478c82d1a63f42c99b79813cd0578fac', quorum: 1})
   provider.getBalance = provider.getBalance.bind(provider)
   const wallet = ethers.Wallet.fromMnemonic(mnemonics.join(' ')).connect(provider)
+  console.log(1)
   return wallet
 }
 
 const loadWalletFromPrivateKey = async (privateKey: string): Promise<ethers.Wallet> => {
-  const provider = ethers.getDefaultProvider(getNetwork(), { etherscan: '5MTJT2IR25UKZ9PHKSUSZQFQ7ZG34DBT2S', infura: '478c82d1a63f42c99b79813cd0578fac', quorum: 0.1})
+  const provider = ethers.getDefaultProvider(getNetwork(), { etherscan: '5MTJT2IR25UKZ9PHKSUSZQFQ7ZG34DBT2S', infura: '478c82d1a63f42c99b79813cd0578fac', quorum: 1})
   provider.getBalance = provider.getBalance.bind(provider)
   const wallet = new ethers.Wallet(privateKey, provider)
+  // console.log('tes ' + wallet)
   return wallet
 }
 
@@ -39,6 +41,7 @@ export const createWallet = async (): Promise<ethers.Wallet> => {
   const mnemonics = generateMnemonics()
   const wallet = await loadWalletFromMnemonics(mnemonics)
   await SecureStore.setItemAsync(PRIVATE_KEY_STORAGE_KEY, JSON.stringify(wallet.privateKey))
+  console.log(wallet.privateKey)
   return wallet
 }
 

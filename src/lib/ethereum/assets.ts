@@ -13,13 +13,22 @@ export enum AssetType {
   uni = 'UNI',
   link = 'LINK'
 }
-
+export enum AssetName {
+  ETH = 'ethereum',
+  USDT = 'tether',
+  DAI = 'dai',
+  WBTC = 'wrapped-bitcoin',
+  MANA = 'decentraland',
+  SAND = 'sandbox',
+  UNI = 'uniswap',
+  LINK = 'chainlink'
+}
 export interface Asset {
   type: AssetType
   balance: number,
 }
 
-const TOKENS = {
+export const TOKENS = {
   [Networks.ropsten]: {
     [AssetType.dai]: '0xad6d458402f60fd3bd25163575031acdce07538d',
     [AssetType.usdt]: '0xb404c51bbc10dcbe948077f18a4b8e553d160084',
@@ -42,36 +51,19 @@ const TOKENS = {
 
 export const sendEther = async (args: { wallet: ethers.Wallet, to: string, amount: number }): Promise<ethers.providers.TransactionResponse> => {
   const { wallet, to, amount } = args
-  // const INFURA_PROJECT_ID = '478c82d1a63f42c99b79813cd0578fac';
-  const SIGNER_PRIVATE_KEY = await SecureStore.getItemAsync('Ethereum.privatekey')
-  // const provider = new ethers.providers.InfuraProvider(
-  //   'ropsten',
-  //   INFURA_PROJECT_ID
-  // );
-  console.log(JSON.parse(SIGNER_PRIVATE_KEY))
-  // const signer = new ethers.Wallet(JSON.parse(SIGNER_PRIVATE_KEY), provider);
-// console.log(signer)
-  // const tx = await signer.sendTransaction({
-  //   to,
-  //   value: ethers.utils.parseEther("0.001"),
-  // });
-  // console.log("Mining transaction...");
-  // console.log(`https://${network}.etherscan.io/tx/${tx.hash}`);
-  // // Waiting for the transaction to be mined
-  // const receipt = await tx.wait();
-  // // The transaction is now on chain!
-  // console.log(`Mined in block ${receipt.blockNumber}`);
-
-  // return tx;
 
   const network = await wallet.provider.getNetwork()
-  // console.log(wallet.provider)
+  
+  // const contract = new ethers.Contract('ETH', erc20ABI, wallet) as ERC20Contract
   const transaction = await wallet.sendTransaction({
     to,
     value: ethers.utils.parseEther(amount.toString()),
-    chainId: network.chainId
+    chainId: network.chainId,
+    // gasLimit: gas,
+    // gasPrice: 40
   });
-  return transaction
+
+  return transaction; //transaction
 }
 
 export const sendToken = async (args: { wallet: ethers.Wallet, to: string, amount: number, type: AssetType }): Promise<ethers.providers.TransactionResponse> => {

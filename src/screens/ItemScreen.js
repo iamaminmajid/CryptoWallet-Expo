@@ -25,13 +25,19 @@ import { BarCodeScanner } from 'expo-barcode-scanner';
 import { NavigationContainer } from '@react-navigation/native';
 import { ethers, Wallet } from 'ethers';
 import { sendAsset } from '../lib/ethereum/wallet';
-import { sendEther } from '../lib/ethereum/assets';
+import { AssetType, Asset, sendEther, loadAssets, AssetName } from '../lib/ethereum/assets';
 
 import Chart from './Chart';
+
+import * as SecureStore from 'expo-secure-store'
+import { ASSETS } from '../components/EthereumProvider';
+import Transactions from '../blocks/Transactions';
+
 
 export default function ItemScreen(props){
     const [isModalVisible, setModalVisible] = useState(false);
     const [isModalVisible2, setModalVisible2] = useState(false);
+    const [isModalVisible3, setModalVisible3] = useState(false);
 
     
     function handleModal(){
@@ -42,25 +48,54 @@ export default function ItemScreen(props){
     }
     function handleModal2(){
         setModalVisible2(false)
+
     }
     function handleModalOn2(){
         setModalVisible2(true)
+        setScanned(false);
+        setWaitVerification(false)
+        setAddress(null)
+        setWaiting(false);
     }
+    function handleModal3(){
+        setModalVisible3(false)
+    }
+    function handleModalOn3(){
+        setModalVisible3(true)
+    }
+
+    function SendTransaction(){
+        
+        // handleModal2()
+        setWaiting(true);
+        console.log('sending')
+        // console.log(Number(ethers.utils.formatEther(gas)) );
+        try{
+            props.route.params.sendAsset(Address, Amount, coin.type);
+            alert('Transaction in progress, check back in a bit.')
+        }catch(e){
+            alert('Gas fee is too high right now and your balance is low.')
+        }
+        // return 
+    }
+
+    const [wait, setWaiting] = useState(false);
     const coin = props.route.params.asset;
     const wallet = props.route.params.wallet;
 
     const [coinData, setCoinData] = useState();
 
-    const [history, setHistory] = useState();
-    const [inthistory, setIntHistory] = useState();
+    
 
 
 
     const [hasPermission, setHasPermission] = useState(null);
     const [scanned, setScanned] = useState(false);
-    const [loading, setLoading] = useState(true);
-
     
+    const [asset, setAsset] = useState();
+    
+    const [gas, setGas] = useState(4)
+
     useEffect(() => {
         (async () => {
           const { status } = await BarCodeScanner.requestPermissionsAsync();
@@ -69,209 +104,96 @@ export default function ItemScreen(props){
     }, []);
 
       useEffect(() => {
-        // console.log(wallet.address)
+        // console.log(assets)
+        // {}
+        console.log(wallet.address)
 
         axios.get('https://min-api.cryptocompare.com/data/price?fsym='+coin.type+'&tsyms=USD').then((e) => {
-            setCoinData( (e.data.USD * coin.balance ).toFixed(4) ); 
+            setCoinData( (e.data.USD * coin.balance ).toFixed(6) ); 
         })
-    // console.log(wallet)
-    if(coin.type == 'ETH'){
-        axios.get('https://api-ropsten.etherscan.io/api?module=account&action=txlist&address='+wallet.address+'&startblock=0&endblock=99999999&page=1&offset=10&sort=desc&apikey=5MTJT2IR25UKZ9PHKSUSZQFQ7ZG34DBT2S').then((e) => {
-            setHistory( e.data ); 
-            axios.get('https://api-ropsten.etherscan.io/api?module=account&action=txlistinternal&address='+wallet.address+'&startblock=0&endblock=99999999&page=1&offset=10&sort=desc&apikey=5MTJT2IR25UKZ9PHKSUSZQFQ7ZG34DBT2S').then((e) => {
-                setIntHistory( e.data ); 
-                setLoading(false);
-            })
-        })
-    }else{
-        axios.get('https://api-ropsten.etherscan.io/api?module=account&action=tokentx&address='+wallet.address+'&startblock=0&endblock=99999999&page=1&offset=10&sort=desc&apikey=5MTJT2IR25UKZ9PHKSUSZQFQ7ZG34DBT2S').then((e) => {
-            setHistory( e.data ); 
-            setLoading(false);
-        })
-    }
+        // console.log(wallet)
+        
     
     
       }, []);
     const [waitVerification, setWaitVerification] = useState(false);
     const handleBarCodeScanned = ({ type, data }) => {
-        setScanned(true);
-        setWaitVerification(true)
-        // alert(`Bar code with type ${type} and data ${data} has been scanned!`);
-        setAddress(data);
+        let c = data.split(":")[0];
+        console.log(data.split(":")[1])
+        // console.log(AssetName[coin.type]);
+        
+        if(c != AssetName[coin.type] && typeof(data.split(":")) == Array){
+            alert('This is not a ' + AssetName[coin.type] + ' Address')
+        }else if(data.split(":")[1] != undefined){
+            console.log("a")
+            setScanned(true);
+            setWaitVerification(true)
+            setAddress(data.split(":")[1]);
+            
+        }else{
+            console.log("e")
+            setScanned(true);
+            setWaitVerification(true)
+            setAddress(data) ;
+        }
+        
       };
       
-    
-      const [selectedTab, setSelectedTab] = useState('red');
 
       const [Address, setAddress] = useState(null);
       const [Amount, setAmount] = useState(null);
 
-  const renderRedContents = () => (
-    
-    <View style={[styles.contents, styles.redContents]}>
-      {/* <Text style={styles.contentsText}>red tab contents</Text> */}
-      {/* {console.log(history.result[0])} */}
-        {history.result.map((trx) => {
-            
-            let tokenBalance = ethers.BigNumber.from(trx.value);
-            let e = Number(ethers.utils.formatEther(tokenBalance));
-            if(trx.to == wallet.address.toLocaleLowerCase()){
-                return(
-                    <View style={styles.tran}>
-                        <View style={styles.traninner}>
-                            <View style={styles.icontrx}>
-                                <FontAwesome name="angle-down" size={25} color="#2196f3"/>
-                            </View>
-                            <View style={styles.maininfo}>
-                                <View><Text style={styles.textlabel}>Receive</Text></View>
-                                <View><Text style={styles.time}>{new Date(trx.timeStamp * 1000).toDateString()}</Text></View>
-                            </View>
-                        </View>
-                        <View style={styles.valu}>
-                            <Text style={styles.val}>{coin.type == 'ETH'? e : trx.value/1000000}</Text>
-                        </View>
-                    </View> 
-                )
-            }else{
-                return( 
-                    <View style={styles.tran}>
-                        <View style={styles.traninner}>
-                            <View style={styles.icontrx2}>
-                                <FontAwesome name="angle-up" size={25} color="#8bc34a"/>
-                            </View>
-                            <View style={styles.maininfo}>
-                                <View><Text style={styles.textlabel}>Send</Text></View>
-                                <View><Text style={styles.time}>{new Date(trx.timeStamp * 1000).toDateString()}</Text></View>
-                            </View>
-                        </View>
-                        <View style={styles.valu}>
-                            <Text style={styles.val}>{coin.type == 'ETH'? e : trx.value/1000000}</Text>
-                        </View>
-                    </View> 
-                )
-            }
-          })
-        }
-      
-      {history.result.length == 0 ? <Text>No Transactions Found</Text> : <></>}
-    </View>
-  );
+      const [High, setHigh] = useState(null);
+      const [Low, setLow] = useState(null);
 
-  const renderBlueContents = () => (
-    <View style={[styles.contents, styles.redContents]}>
-      {/* <Text style={styles.contentsText}>red tab contents</Text> */}
-      <ScrollView>
-      {/* {console.log(inthistory.result)} */}
-        {inthistory.result.map((trx) => {
-            
-            let tokenBalance = ethers.BigNumber.from(trx.value);
-            let e = Number(ethers.utils.formatEther(tokenBalance));
-            if(trx.to == wallet.address.toLocaleLowerCase()){
-                return(
-                    <View style={styles.tran}>
-                        <View style={styles.traninner}>
-                            <View style={styles.icontrx}>
-                                <FontAwesome name="angle-down" size={25} color="#2196f3"/>
-                            </View>
-                            <View style={styles.maininfo}>
-                                <View><Text style={styles.textlabel}>Receive</Text></View>
-                                <View><Text style={styles.time}>{new Date(trx.timeStamp * 1000).toDateString()}</Text></View>
-                            </View>
-                        </View>
-                        <View style={styles.valu}>
-                            <Text style={styles.val}>{e}</Text>
-                        </View>
-                    </View> 
-                )
-            }else{
-                return( 
-                    <View style={styles.tran}>
-                        <View style={styles.traninner}>
-                            <View style={styles.icontrx2}>
-                                <FontAwesome name="angle-up" size={25} color="#8bc34a"/>
-                            </View>
-                            <View style={styles.maininfo}>
-                                <View><Text style={styles.textlabel}>Send</Text></View>
-                                <View><Text style={styles.time}>{new Date(trx.timeStamp * 1000).toDateString()}</Text></View>
-                            </View>
-                        </View>
-                        <View style={styles.valu}>
-                            <Text style={styles.val}>{e}</Text>
-                        </View>
-                    </View> 
-                )
-            }
-          })
-        }
-        {inthistory.result.length == 0 ? <Text>No Transactions Found</Text> : <></>}
-      
-        </ScrollView>
-    </View>
-  );
+    //   const [Alert, setAlert] = useState(null);
+    async function setAlert(h, l, token){
+        // let e = await SecureStore.setItemAsync('alert-' + token, JSON.stringify([l,h,token]))
+        alert('Price Alert Added')
+        handleModal3()
+    }
+
+    
 
     return(
+        
         <SafeAreaView>
             <StatusBar/>
             <ScrollView>
             <View style={styles.containerTop}>
-            <Image style={{height:50, width:50, marginBottom:5}} source={{uri: 'https://raw.githubusercontent.com/atomiclabs/cryptocurrency-icons/master/128/color/'+ coin.type.toLocaleLowerCase() +'.png'}}/>
-                {/* <FontAwesome name="money" fontSize={64} style={{paddingBottom:15}}/> */}
+
+                <Image style={{height:50, width:50, marginBottom:5}} source={{uri: 'https://raw.githubusercontent.com/atomiclabs/cryptocurrency-icons/master/128/color/'+ coin.type.toLocaleLowerCase() +'.png'}}/>
                 <Text style={styles.smallText}>{coin.balance}</Text>
                 <Text style={styles.text}>${coinData}</Text>
                 <Text style={styles.smallText}>{getNetwork()} Network</Text>
+
+                {/* <Text style={styles.smallText}>Min Gas {gas}</Text> */}
                 <View style={styles.action}>
                     <View style={styles.iconBox}>
                         <TouchableOpacity style={styles.icon} onPress={handleModalOn2}>
-                            <FontAwesome name="arrow-up" color="#fff" fontSize={22}/>
+                            <FontAwesome name="arrow-up" color="#fff" size={22}/>
                         </TouchableOpacity>
                         <Text style={styles.iconText}>Send</Text>
                     </View>
                     <View style={styles.iconBox}>
                         <TouchableOpacity style={styles.icon} onPress={handleModalOn}>
-                            <FontAwesome name="arrow-down" color="#fff" fontSize={22}/>
+                            <FontAwesome name="arrow-down" color="#fff" size={22}/>
                         </TouchableOpacity>
                         <Text style={styles.iconText}>Receive</Text>
                     </View>
                     <View style={styles.iconBox}>
-                        <View style={styles.icon}>
-                            <FontAwesome name="credit-card" color="#fff" fontSize={22}/>
-                        </View>
-                        <Text style={styles.iconText}>Buy</Text>
+                        <TouchableOpacity style={styles.icon}  onPress={handleModalOn3}>
+                            <FontAwesome name="comment" color="#fff" size={22}/>
+                        </TouchableOpacity>
+                        <Text style={styles.iconText}>Setup Alert</Text>
                     </View>
                 </View>
             </View>
             
             <Chart asset={coin}/>
             
-            <View style={styles.container}>
+            <Transactions wallet={wallet} coin={coin}/>
             
-                {coin.type == 'ETH' ? (<>
-                    
-                    <View style={styles.tabs}>
-                        <View style={selectedTab === 'red' ? styles.underline : styles.normalTab}>
-                            <TouchableOpacity style={styles.tab} onPress={() => { setSelectedTab('red'); }} ><Text>Transactions</Text></TouchableOpacity>
-                        </View>
-                        <View style={selectedTab === 'blue' ? styles.underline : styles.normalTab}>
-                            <TouchableOpacity style={styles.tab} onPress={() => { setSelectedTab('blue' ); }}><Text>Internal Trnx</Text></TouchableOpacity>
-                        </View>
-                    </View>
-                    <ScrollView>
-                    
-                    {loading == false ? selectedTab === 'red'
-                    ? renderRedContents()
-                    : loading == false ? renderBlueContents() : <ActivityIndicator/> : <ActivityIndicator/> }
-
-                    </ScrollView>
-                    
-                
-                </>) : <>
-                    {loading == false ? renderRedContents() : <ActivityIndicator/>}
-                </>} 
-                
-                
-            </View>
-            
-
             <Modal isVisible={isModalVisible} onBackdropPress={handleModal}>
                 <View style={styles.Modal}>
                     <View style={styles.ModalInner}>
@@ -283,7 +205,7 @@ export default function ItemScreen(props){
                     </View>
                 </View>
             </Modal>
-{/* {console.log()} */}
+
             <Modal isVisible={isModalVisible2} onBackdropPress={handleModal2}>
                 <View style={styles.Modal}>
                     <View style={styles.ModalInner}>
@@ -293,13 +215,31 @@ export default function ItemScreen(props){
                         onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
                         style={{height:250, width:"100%", marginTop:0}}
                         type='back' /> : <></> }
+                        
                         <Text style={styles.label2}>Address</Text>
                         <TextInput style={styles.input} onChangeText={(value) => setAddress(value)} value={Address}/>
                         <Text style={styles.label2}>Amount</Text>
                         <TextInput style={styles.input} onChangeText={(value) => setAmount(value)}/>
-                        <TouchableOpacity style={styles.button} onPress={() => props.route.params.sendAsset(0xD8342326ee0bCD0c9387ea6f5E3E19BcD597D999, 0.1, coin.type)}>
+                        {wait == false ?
+                        <TouchableOpacity style={styles.button} onPress={SendTransaction}>
                             <FontAwesome name="send" color={"#fff"}/> 
                             <Text style={{color:"#fff", marginLeft:12}}>Send</Text>
+                        </TouchableOpacity> : <><ActivityIndicator/><Text>Transaction in progres</Text></>}
+                    </View>
+                </View>
+            </Modal>
+            <Modal isVisible={isModalVisible3} onBackdropPress={handleModal3}>
+                <View style={styles.Modal}>
+                    <View style={styles.ModalInner}>
+                        <Text style={styles.label}>Setup Alerts</Text>
+                        
+                        <Text style={styles.label2}>When price is lower than:</Text>
+                        <TextInput style={styles.input} onChangeText={(value) => setLow(value)} value={Address}/>
+                        <Text style={styles.label2}>When price is higher than:</Text>
+                        <TextInput style={styles.input} onChangeText={(value) => setHigh(value)}/>
+                        <TouchableOpacity style={styles.button} onPress={() => {setAlert(Low, High, coin.type)}}>
+                            <FontAwesome name="send" color={"#fff"}/> 
+                            <Text style={{color:"#fff", marginLeft:12}}>Save</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -414,79 +354,6 @@ const styles = StyleSheet.create({
         alignItems:"center",
         justifyContent:"center"
     },
-    tabs:{
-        display:"flex",
-        flexDirection:"row"
-    },
-    underline:{
-        // borderBottomColor:"#333",
-        // borderBottomWidth:1,
-        width:"50%",
-        backgroundColor:"#dfdfdf",
-        borderRadius:50
-    },
-    normalTab:{
-        width:"50%"
-    },
-    tab:{
-        padding:12,
-        textAlign:"center",
-        display:"flex",
-        justifyContent:"center",
-        alignItems:"center"
-        // paddingLeft:25
-    },
-    tran:{
-        display:"flex",
-        flexDirection:"row",
-        marginTop:15,
-        justifyContent:"space-between",
-        borderBottomWidth:1,
-        paddingBottom:10,
-        borderBottomColor:"#d3d3d3"
-    },
-    icontrx:{
-        width:40,
-        height:40,
-        display:"flex",
-        alignItems:"center",
-        justifyContent:"center",
-        borderRadius:50,
-        borderWidth:1,
-        borderColor: "#2196f3"
-        
-    },
-    icontrx2:{
-        width:40,
-        height:40,
-        display:"flex",
-        alignItems:"center",
-        justifyContent:"center",
-        borderRadius:50,
-        borderWidth:1,
-        borderColor: "#8bc34a"
-    },
-    maininfo:{
-        paddingLeft:15,
-        display:"flex",
-        justifyContent:"center",
-    },
-    textlabel:{
-        fontSize:18
-    },
-    time:{
-        fontSize:12,
-        color:"#818181"
-    },
-    valu:{
-        display:"flex",
-        justifyContent:"center",
-        alignItems:"flex-end"
-    },
-    val:{},
-    traninner:{
-        display:"flex",
-        flexDirection:"row"
-    }
+    
 
 })

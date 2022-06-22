@@ -8,7 +8,7 @@ import {
 } from "../lib/ethereum/wallet";
 import { loadAssets, AssetType, Asset } from "../lib/ethereum/assets";
 
-const ASSETS = [
+export const ASSETS = [
   AssetType.eth, 
   AssetType.usdt, 
   AssetType.dai, 
@@ -39,7 +39,9 @@ class EthereumProvider extends React.Component<EthereumProviderProps> {
   public componentDidMount = async () => {
     try {
       const wallet = await loadWallet(WalletStorageType.privateKey);
+      // console.log(wallet)
       const assets = await loadAssets(ASSETS, wallet);
+      
       this.setState({ wallet, assets, loading: false });
     } catch (e) {
       console.log("ERROR", e);

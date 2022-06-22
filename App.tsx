@@ -12,7 +12,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
-
+import * as SecureStore from 'expo-secure-store';
 
 import HomeScreen from './src/screens/HomeScreen';
 import Scanner from './src/screens/Scanner';
@@ -31,7 +31,16 @@ export default function App() {
   // console.log(ethers.utils.HDNode.entropyToMnemonic(e))
   // console.log(ethers.utils.entropyToMnemonic(e))
   console.log("one")
+//  49c17025c9c336d534591c268d3848d3714b8ad7032c1ee2f7e03395753d1853
+
+useEffect(() => {
+  // async function e (){
+  //   await SecureStore.setItemAsync('Ethereum.privatekey', JSON.parse('49c17025c9c336d534591c268d3848d3714b8ad7032c1ee2f7e03395753d1853'));
+  // }
+  // e()
+})
   
+
   return (
     // <><Text>testasdf asdfasdfasdfa asdf asf </Text></>
     <NavigationContainer>
